@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'vibe_board_screen.dart';
 import 'new_task.dart';
 import 'login.dart';
+import 'pomodoro_screen.dart';
 
 class TasksListScreen extends StatefulWidget {
   const TasksListScreen({super.key});
@@ -211,6 +213,44 @@ class _TasksListScreenState extends State<TasksListScreen> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.headphones, color: Colors.white),
+            tooltip: 'Vibe Board & Music',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const VibeBoardScreen(),
+                ),
+              );
+            },
+          ),
+          // زر التايمر الذي يقوم بجلب المهام الحقيقية وإرسالها لشاشة البومودورو
+          IconButton(
+            icon: const Icon(Icons.timer, color: Colors.white),
+            tooltip: 'جلسات التركيز',
+            onPressed: () async {
+              final querySnapshot = await FirebaseFirestore.instance
+                  .collection('tasks')
+                  .where('userId', isEqualTo: currentUid)
+                  .get();
+
+              List<String> userTasks = querySnapshot.docs
+                  .map((doc) => doc.data()['title']?.toString() ?? '')
+                  .where((title) => title.isNotEmpty)
+                  .toList();
+
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        PomodoroScreen(availableTasks: userTasks),
+                  ),
+                );
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout_rounded, color: Colors.white),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
@@ -279,7 +319,6 @@ class _TasksListScreenState extends State<TasksListScreen> {
               ],
             ),
           ),
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -383,7 +422,6 @@ class _TasksListScreenState extends State<TasksListScreen> {
                         ],
                       ),
                     ),
-
                     Expanded(
                       child: filteredTasks.isEmpty
                           ? const Center(
